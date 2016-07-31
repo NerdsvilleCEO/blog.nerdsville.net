@@ -3,21 +3,21 @@
 <head>
   <meta charset="utf-8">
   
-  <title>Go Pointers | Nerdsville Blog</title>
+  <title>chef-private-key-vault | Nerdsville Blog</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
-  <meta name="description" content="In Go, we have pointers, just as there are in C. Pointers can be a difficult concept to grasp, so I am writing this blogpost in hopes that it will demystify what we all know as pointers :)
-A pointer,">
+  <meta name="description" content="Problem  I wanted the capability to allow a user of the chef server to upload their private key encrypted and only them to be able to decrypt it. 
+  Additionally, I wanted to create a role for each in">
 <meta property="og:type" content="article">
-<meta property="og:title" content="Go Pointers">
-<meta property="og:url" content="http://blog.nerdsville.net/2016/02/16/go-pointers/index.html">
+<meta property="og:title" content="chef-private-key-vault">
+<meta property="og:url" content="http://blog.nerdsville.net/2016/07/31/chef-private-key-vault/index.html">
 <meta property="og:site_name" content="Nerdsville Blog">
-<meta property="og:description" content="In Go, we have pointers, just as there are in C. Pointers can be a difficult concept to grasp, so I am writing this blogpost in hopes that it will demystify what we all know as pointers :)
-A pointer,">
+<meta property="og:description" content="Problem  I wanted the capability to allow a user of the chef server to upload their private key encrypted and only them to be able to decrypt it. 
+  Additionally, I wanted to create a role for each in">
 <meta property="og:updated_time" content="2016-07-31T21:50:26.112Z">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="Go Pointers">
-<meta name="twitter:description" content="In Go, we have pointers, just as there are in C. Pointers can be a difficult concept to grasp, so I am writing this blogpost in hopes that it will demystify what we all know as pointers :)
-A pointer,">
+<meta name="twitter:title" content="chef-private-key-vault">
+<meta name="twitter:description" content="Problem  I wanted the capability to allow a user of the chef server to upload their private key encrypted and only them to be able to decrypt it. 
+  Additionally, I wanted to create a role for each in">
   
     <link rel="alternate" href="/atom.xml" title="Nerdsville Blog" type="application/atom+xml">
   
@@ -70,10 +70,10 @@ A pointer,">
   </div>
 </header>
       <div class="outer">
-        <section id="main"><article id="post-go-pointers" class="article article-type-post" itemscope itemprop="blogPost">
+        <section id="main"><article id="post-chef-private-key-vault" class="article article-type-post" itemscope itemprop="blogPost">
   <div class="article-meta">
-    <a href="/2016/02/16/go-pointers/" class="article-date">
-  <time datetime="2016-02-16T00:00:54.000Z" itemprop="datePublished">2016-02-15</time>
+    <a href="/2016/07/31/chef-private-key-vault/" class="article-date">
+  <time datetime="2016-07-31T21:38:32.000Z" itemprop="datePublished">2016-07-31</time>
 </a>
     
   </div>
@@ -84,7 +84,7 @@ A pointer,">
         
   
     <h1 class="article-title" itemprop="name">
-      Go Pointers
+      chef-private-key-vault
     </h1>
   
 
@@ -92,26 +92,19 @@ A pointer,">
     
     <div class="article-entry" itemprop="articleBody">
       
-        <p>In Go, we have pointers, just as there are in C. Pointers can be a difficult concept to grasp, so I am writing this blogpost in hopes that it will demystify what we all know as pointers :)</p>
-<p>A pointer, simply is a reference to an address in memory. </p>
-<p>If we have a pointer such as:</p>
-<pre><code>var *p1 string
-implicitString := &quot;Test&quot;
-p1 = &amp;implicitString
-</code></pre><p>By prepending the variable name with the &amp; symbol, we are essentially saying “give us the address of the variable” and then we are taking that address and setting it as the reference of the pointer.</p>
-<p>If we want to use the pointer, we could use it as any other variable with one exception:</p>
-<pre><code>fmt.Println(*p1);
-</code></pre><p>We have to use the <em> prefix in order to retrieve the actual contents, because remember, earlier by using the &amp; prefix on implicitString, we stored the address inside of the pointer. The </em> prefix de-references the pointer in order to get the value at that address.</p>
-<p>We need to be careful when using pointers, though, because we can accidentally alter memory which we did not intend to modify!</p>
-<pre><code>*p1 = &quot;Test2&quot;
-fmt.Println(implicitString)
-=&gt; &quot;Test2&quot;
-</code></pre><p>If we modify the contents of a pointer without copying, we actually end up modifying the contents of that address in memory, and therefore anything that points to it will be modified!</p>
-
+        <h2 id="Problem"><a href="#Problem" class="headerlink" title="Problem"></a>Problem</h2><p>  I wanted the capability to allow a user of the chef server to upload their private key encrypted and only them to be able to decrypt it. </p>
+<p>  Additionally, I wanted to create a role for each individual user which would need to be added to the node in order to for the node to be allowed to decrypt the content.</p>
+<h2 id="Solution"><a href="#Solution" class="headerlink" title="Solution"></a>Solution</h2><p>  Chef Vault turns out to be exactly what I needed to achieve this. It was however quite a pain to get it working how I wanted it to.</p>
+<p>  The first part involves intervention by the admin, this involves creating a user for the team member, and creating a role that only they have permission to modify.</p>
+<p>  In order to get the private key in a JSON format for chef vault to use, I had to do the following:</p>
+  <figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line">#!/bin/sh</div><div class="line">key=$(tr &apos;\n$&apos; &apos;:&apos; &lt; $1 | gsed &apos;s/:/\\n/g&apos;)</div><div class="line">printf &apos;&#123;\n &quot;github_key&quot;: &quot;%s&quot;\n&#125;\n&apos; &quot;$key&quot;</div></pre></td></tr></table></figure>
+<p>  This replaces all newlines with the literal “\n” and prints it out into a JSON text which can then be outputted to a file.</p>
+<p>  Next, the user would need to clone down the chef repository and create the new vault:</p>
+  <figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line">cd chef-repo</div><div class="line">knife vault create keys USER -S &apos;USER_ROLE&apos; -A &apos;USER&apos; -J json_file.json</div><div class="line">knife upload data_bags</div></pre></td></tr></table></figure>
       
     </div>
     <footer class="article-footer">
-      <a data-url="http://blog.nerdsville.net/2016/02/16/go-pointers/" data-id="cirb562ii00019ihcjwjtrjhe" class="article-share-link">Share</a>
+      <a data-url="http://blog.nerdsville.net/2016/07/31/chef-private-key-vault/" data-id="cirb562i900009ihcf7cnrvu7" class="article-share-link">Share</a>
       
       
     </footer>
@@ -120,15 +113,20 @@ fmt.Println(implicitString)
     
 <nav id="article-nav">
   
-    <a href="/2016/07/31/chef-private-key-vault/" id="article-nav-newer" class="article-nav-link-wrap">
+    <a href="/2016/07/31/hello-world/" id="article-nav-newer" class="article-nav-link-wrap">
       <strong class="article-nav-caption">Newer</strong>
       <div class="article-nav-title">
         
-          chef-private-key-vault
+          Hello World
         
       </div>
     </a>
   
+  
+    <a href="/2016/02/16/go-pointers/" id="article-nav-older" class="article-nav-link-wrap">
+      <strong class="article-nav-caption">Older</strong>
+      <div class="article-nav-title">Go Pointers</div>
+    </a>
   
 </nav>
 
